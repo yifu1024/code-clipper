@@ -7,7 +7,7 @@ SOURCE_APP="$ROOT_DIR/dist/$APP_NAME.app"
 INSTALL_DIR="$HOME/Applications"
 TARGET_APP="$INSTALL_DIR/$APP_NAME.app"
 
-"$ROOT_DIR/script/build_and_run.sh" --verify
+"$ROOT_DIR/script/build_app.sh"
 pkill -x "$APP_NAME" >/dev/null 2>&1 || true
 
 mkdir -p "$INSTALL_DIR"
