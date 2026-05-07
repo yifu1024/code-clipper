@@ -2,7 +2,7 @@
 
 CodeClipper 是一款原生 macOS 菜单栏工具，用来自动读取“信息”里收到的验证码，复制到剪贴板，并在你设置的秒数后恢复原来的剪贴板内容。
 
-![CodeClipper 介绍图](Assets/README/hero.png)
+[![CodeClipper 介绍图](Assets/README/hero.png)](https://github.com/yifu1024/code-clipper/releases/download/v1.0.0/CodeClipper.dmg)
 
 ## 功能
 
