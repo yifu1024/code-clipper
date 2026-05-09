@@ -7,6 +7,7 @@ final class VerificationMonitor: ObservableObject {
     @Published private(set) var lastMatch: MatchedCode?
     @Published private(set) var lastError: String?
     @Published private(set) var lastScanAt: Date?
+    @Published private(set) var lastScanSummary: String?
 
     private let logger = Logger(subsystem: "com.codex.CodeClipper", category: "Monitor")
     private let scanner = MessagesDatabaseScanner()
@@ -15,7 +16,8 @@ final class VerificationMonitor: ObservableObject {
     private let notificationService = NotificationService()
     private var configuration = AppConfiguration.default
     private var timer: Timer?
-    private var seenMessageIDs = Set<Int64>()
+    private var matchedMessageIDs = Set<Int64>()
+    private var ignoredMessageIDs = Set<Int64>()
 
     func configure(with configuration: AppConfiguration) {
         self.configuration = configuration
@@ -48,6 +50,14 @@ final class VerificationMonitor: ObservableObject {
     }
 
     func scanNow() {
+        scan(retryIgnoredMessages: false)
+    }
+
+    func rescanRecentUnmatched() {
+        scan(retryIgnoredMessages: true)
+    }
+
+    private func scan(retryIgnoredMessages: Bool) {
         lastScanAt = Date()
         let config = configuration
 
@@ -58,7 +68,12 @@ final class VerificationMonitor: ObservableObject {
                 )
 
                 await MainActor.run {
-                    handle(messages: messages, configuration: config)
+                    let summary = handle(
+                        messages: messages,
+                        configuration: config,
+                        retryIgnoredMessages: retryIgnoredMessages
+                    )
+                    lastScanSummary = summary
                     lastError = nil
                 }
             } catch {
@@ -81,17 +96,31 @@ final class VerificationMonitor: ObservableObject {
         }
     }
 
-    private func handle(messages: [MessageRecord], configuration: AppConfiguration) {
+    private func handle(
+        messages: [MessageRecord],
+        configuration: AppConfiguration,
+        retryIgnoredMessages: Bool
+    ) -> String {
         let freshMessages = messages
-            .filter { !seenMessageIDs.contains($0.id) }
+            .filter { message in
+                !matchedMessageIDs.contains(message.id)
+                && (retryIgnoredMessages || !ignoredMessageIDs.contains(message.id))
+            }
             .sorted { $0.receivedAt < $1.receivedAt }
 
-        for message in freshMessages {
-            seenMessageIDs.insert(message.id)
+        var matchedCount = 0
+        var ignoredCount = 0
 
+        for message in freshMessages {
             guard let match = matcher.firstMatch(in: message.body, rules: configuration.rules) else {
+                ignoredMessageIDs.insert(message.id)
+                ignoredCount += 1
                 continue
             }
+
+            matchedMessageIDs.insert(message.id)
+            ignoredMessageIDs.remove(message.id)
+            matchedCount += 1
 
             clipboard.copy(
                 match.code,
@@ -118,5 +147,11 @@ final class VerificationMonitor: ObservableObject {
                 }
             }
         }
+
+        if retryIgnoredMessages {
+            return "重新扫描 \(freshMessages.count) 条最近未命中消息，命中 \(matchedCount) 条。"
+        }
+
+        return "扫描 \(freshMessages.count) 条新消息，命中 \(matchedCount) 条，未命中 \(ignoredCount) 条。"
     }
 }

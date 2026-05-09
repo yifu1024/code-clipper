@@ -34,6 +34,11 @@ struct CodeClipperApp: App {
                     monitor.scanNow()
                 }
                 .keyboardShortcut("r", modifiers: [.command, .shift])
+
+                Button("Rescan Recent Unmatched") {
+                    monitor.rescanRecentUnmatched()
+                }
+                .keyboardShortcut("r", modifiers: [.command, .option])
             }
         }
 

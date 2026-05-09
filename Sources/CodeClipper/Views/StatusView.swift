@@ -20,6 +20,19 @@ struct StatusView: View {
                     }
                 }
 
+                if let summary = monitor.lastScanSummary {
+                    DetailSection(title: "最近扫描") {
+                        Text(summary)
+                            .foregroundStyle(.secondary)
+
+                        Button {
+                            monitor.rescanRecentUnmatched()
+                        } label: {
+                            Label("重扫最近未命中短信", systemImage: "arrow.triangle.2.circlepath")
+                        }
+                    }
+                }
+
                 if let match = monitor.lastMatch {
                     DetailSection(title: "最近复制") {
                         LabeledContent("验证码", value: match.code)

@@ -29,6 +29,10 @@ struct MenuBarView: View {
                 monitor.scanNow()
             }
 
+            Button("重扫未命中短信") {
+                monitor.rescanRecentUnmatched()
+            }
+
             Button("打开设置") {
                 openWindow(id: "main")
                 NSApp.activate(ignoringOtherApps: true)
